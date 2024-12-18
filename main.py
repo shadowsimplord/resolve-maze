@@ -2,9 +2,20 @@ import cv2
 import numpy as np
 from queue import PriorityQueue
 import matplotlib.pyplot as plt
+from tkinter import Tk
+from tkinter.filedialog import askopenfilename
+
+# Tạo hộp thoại chọn file
+Tk().withdraw()
+file_path = askopenfilename()
+
+# Kiểm tra xem người dùng đã chọn file chưa
+if not file_path:
+    print("Không có tệp nào được chọn.")
+    exit()
 
 # Tải hình ảnh mê cung
-image = cv2.imread('maze2.png')
+image = cv2.imread(file_path)
 
 # Kiểm tra xem hình ảnh có được tải thành công không
 if image is None:
@@ -14,28 +25,33 @@ if image is None:
 # Chuyển đổi hình ảnh sang không gian màu HSV
 hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
-# Xác định điểm bắt đầu (màu xanh lá cây)
-lower_green = np.array([35, 100, 100])
-upper_green = np.array([85, 255, 255])
-start_mask = cv2.inRange(hsv, lower_green, upper_green)
+# Xác định điểm bắt đầu (màu đỏ)
+lower_red = np.array([0, 100, 100])
+upper_red = np.array([10, 255, 255])
+start_mask1 = cv2.inRange(hsv, lower_red, upper_red)
+lower_red = np.array([160, 100, 100])
+upper_red = np.array([179, 255, 255])
+start_mask2 = cv2.inRange(hsv, lower_red, upper_red)
+start_mask = start_mask1 + start_mask2
 start_points = cv2.findNonZero(start_mask)
 
 if start_points is not None:
     start_point = (start_points[0][0][1], start_points[0][0][0])  # (y, x)
 else:
-    print("Không tìm thấy điểm bắt đầu màu xanh lá cây")
+    print("Không tìm thấy điểm bắt đầu màu đỏ")
     exit()
 
-# Xác định điểm kết thúc (màu đỏ)
-lower_red = np.array([0, 100, 100])
-upper_red = np.array([10, 255, 255])
-end_mask1 = cv2.inRange(hsv, lower_red, upper_red)
-lower_red = np.array([160, 100, 100])
-upper_red = np.array([179, 255, 255])
-end_mask2 = cv2.inRange(hsv, lower_red, upper_red)
-end_mask = end_mask1 + end_mask2
+# Xác định điểm kết thúc (màu xanh lá cây)
+lower_green = np.array([35, 100, 100])
+upper_green = np.array([85, 255, 255])
+end_mask = cv2.inRange(hsv, lower_green, upper_green)
 end_points = cv2.findNonZero(end_mask)
-end_point = (end_points[0][0][1], end_points[0][0][0])  # (y, x)
+
+if end_points is not None:
+    end_point = (end_points[0][0][1], end_points[0][0][0])  # (y, x)
+else:
+    print("Không tìm thấy điểm kết thúc màu xanh lá cây")
+    exit()
 
 # Xác định tường (màu đen)
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -80,7 +96,7 @@ path = astar(grid, start_point, end_point)
 # Vẽ đường đi lên hình ảnh mê cung
 if path:
     # Vẽ đường đi bằng cách nối các điểm
-    thickness = 15 # Đặt độ dày của đường vẽ tại đây
+    thickness = 15  # Đặt độ dày của đường vẽ tại đây
     for i in range(len(path)-1):
         point1 = (path[i][1], path[i][0])      # Chuyển từ (y,x) sang (x,y) cho cv2.line
         point2 = (path[i+1][1], path[i+1][0])
@@ -91,7 +107,7 @@ if path:
     
     # Hiển thị hình ảnh gốc và hình ảnh đã giải
     plt.subplot(1, 2, 1)
-    plt.imshow(cv2.cvtColor(cv2.imread('maze2.png'), cv2.COLOR_BGR2RGB))
+    plt.imshow(cv2.cvtColor(cv2.imread(file_path), cv2.COLOR_BGR2RGB))
     plt.title('Hình ảnh gốc')
     
     plt.subplot(1, 2, 2)
